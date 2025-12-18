@@ -27,6 +27,7 @@ dev = [
     "yamlfix>=1.17.0",
     "zizmor>=1.11.0",
     "ty>=0.0.1a32",
+    "zizmor>=1.18.0",
 ]
 
 [project.scripts]
