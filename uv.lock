@@ -254,6 +254,7 @@ requires-dist = [
     { name = "ty", marker = "extra == 'dev'", specifier = ">=0.0.1a32" },
     { name = "yamlfix", marker = "extra == 'dev'", specifier = ">=1.17.0" },
     { name = "zizmor", marker = "extra == 'dev'", specifier = ">=1.11.0" },
+    { name = "zizmor", marker = "extra == 'dev'", specifier = ">=1.18.0" },
 ]
 provides-extras = ["dev"]
 
