@@ -30,9 +30,6 @@ dev = [
     "zizmor>=1.18.0",
 ]
 
-[project.scripts]
-fluffless = "fluffless.main:main"
-
 [build-system]
 requires = ["setuptools>=80.9.0", "versioningit>=3.3.0"]
 build-backend = "setuptools.build_meta"
