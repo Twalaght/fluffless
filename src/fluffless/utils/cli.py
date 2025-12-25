@@ -2,10 +2,9 @@
 
 Example usage of CLI entrypoints:
 
-    _BASE_PARSER = cli.create_subparser(command="grouped_parsers", has_subparsers=True)
-    _PARSER = _BASE_PARSER.add_parser("awoo", parents=[cli.base_leaf_parser()])
+    PARSER = _BASE_PARSER.add_parser("awoo")
 
-    @entrypoint(_PARSER)
+    @entrypoint(PARSER)
     def awoo() -> None:
         print("Awoo!")
 
@@ -15,7 +14,7 @@ import argparse
 import importlib
 import pkgutil
 from types import ModuleType
-from typing import Callable
+from typing import Any, Callable
 
 from rich_argparse import _lazy_rich, RichHelpFormatter
 
@@ -82,37 +81,69 @@ ROOT_SUBPARSERS = ROOT_PARSER.add_subparsers(required=True)
 ROOT_PARSER.set_defaults(_entry_func=None)  # Defaults to None, until overridden by the chosen runner function.
 
 
-def base_leaf_parser() -> argparse.ArgumentParser:
-    """ Bottom level parser base template with standardised behaviour.
+def base_parser(
+    is_leaf: bool, formatter_class: type[argparse.HelpFormatter] = CustomRichHelpFormatter,
+) -> argparse.ArgumentParser:
+    """ Baseline parser to provide standard arguments to all parsers using it as a parent.
 
-    Intended to be added only as a parent on parsers tied to runner functions.
+    For non-leaf parsers, only the `--help` action is added, as they are not intended to be invoked directly.
+
+    Args:
+        is_leaf (bool): If the parser should be invoked directly or not, and thus have the appropriate arguments added.
+        formatter_class (type[argparse.HelpFormatter], optional): Formatter class to use for help blocks. \
+                                                                  Defaults to `CustomRichHelpFormatter`.
+
+    Returns:
+        argparse.ArgumentParser: Argument parser to be used as a parent, providing standardised arguments.
     """
-    # Do not add default help, defer to the runner to define it.
-    parser = argparse.ArgumentParser(add_help=False, formatter_class=CustomRichHelpFormatter)
-    parser.add_argument("-v", "--verbose", action="count", default=0, help="Increase verbosity of logger output.")
+    # Do not add a default help string, defer to the specific runner to define it.
+    parser = argparse.ArgumentParser(formatter_class=formatter_class, add_help=False)
+    parser.add_argument(
+        "-h", "--help", action="help", default=argparse.SUPPRESS, help="Show this help message and exit.",
+    )
+    if is_leaf:
+        parser.add_argument("-v", "--verbose", action="count", default=0, help="Increase verbosity of logger output.")
+
     return parser
 
 
-def create_subparser(command: str, has_subparsers: bool = False, *args, **kwargs) -> argparse.ArgumentParser:
-    """ Create and add subparser within the root parser.
+def add_parser(
+    name: str,
+    subparsers: argparse._SubParsersAction | None = None,
+    parents: list[argparse.ArgumentParser] | None = None,
+    is_leaf: bool = True,
+    formatter_class: type[argparse.HelpFormatter] = CustomRichHelpFormatter,
+    **kwargs,
+) -> argparse.ArgumentParser:
+    """ Create a parser under a given subparsers group, or the root subparsers group if one is not provided.
+
+    If a description was not provided for the subparser, uses the help string as a description.
 
     Args:
-        command (str): Command to invoke the subparser.
-        has_subparsers (bool): True if the subparser will have nested subparsers, False otherwise. Defaults to False.
-        *args: Additional positional arguments to pass to `add_parser()`.
-        **kwargs: Additional keyword arguments to pass to `add_parser()`.
+        name (str): The name of the command to use when invoking the parser.
+        subparsers (argparse._SubParsersAction | None, optional): Subparsers group to add the new parser to. \
+                                                                  Defaults to None, where the root subparser \
+                                                                  group will be used by default.
+        parents (list[argparse.ArgumentParser] | None, optional): List of parent parsers to inherit from. \
+                                                                  Defaults to None, where `base_parser` will be used.
+        is_leaf (bool): If the parser should be invoked directly or not, and thus have the appropriate arguments added.
+        formatter_class (type[argparse.HelpFormatter], optional): Formatter class to use for help blocks. \
+                                                                  Defaults to `CustomRichHelpFormatter`.
+        **kwargs: Additional keyword arguments to pass to `subparser.add_parser()`.
+
 
     Returns:
-        argparse.ArgumentParser: Subparser created from the arguments.
+        argparse.ArgumentParser: The created parser from the given arguments.
     """
-    return ROOT_SUBPARSERS.add_parser(
-        command,
-        *args,
-        **kwargs,
-        formatter_class=RichHelpFormatter,
-        # Only lowest level subparsers should inherit from the parser template.
-        parents=[base_leaf_parser()] if not has_subparsers else [],
-    )
+    add_parser_kwargs: dict[str, Any] = {
+        "name": name,
+        "parents": parents or [base_parser(is_leaf, formatter_class)],
+        "formatter_class": formatter_class,
+        "description": kwargs.get("description") or kwargs.get("help"),
+        "add_help": False,
+    }
+    add_parser_kwargs.update(kwargs)
+    return (subparsers or ROOT_SUBPARSERS).add_parser(**add_parser_kwargs)  # type: ignore[invalid-argument-type]
 
 
 def parse_args(*args, **kwargs) -> argparse.Namespace:
@@ -128,7 +159,7 @@ def run(args: argparse.Namespace, config: BaseModel) -> None:
         ROOT_PARSER.print_help()
 
 
-def entrypoint(parser: argparse.ArgumentParser) -> Callable[[RunnerFunction], RunnerFunction]:
+def entrypoint(parser: argparse.ArgumentParser) -> Callable:
     """ Decorate a function as the main runner function for a given parser. """
     def entrypoint_decorator(runner_function: RunnerFunction) -> RunnerFunction:
         """ Set default entry function for the parser. """
