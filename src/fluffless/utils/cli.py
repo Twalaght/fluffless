@@ -49,10 +49,8 @@ class CustomRichHelpFormatter(RichHelpFormatter):
 
     def _get_help_string(self, action: argparse.Action) -> str | None:
         """ Add default help string arguments for actions which require them. """
-        # Do not add default argument strings for specific argparse actions.
-        if tuple(action.option_strings) in (
-            ("-v", "--verbose"),  # Standard verbosity flag.
-        ):
+        # Do not add default argument strings for the standard verbosity flag.
+        if tuple(action.option_strings) == ("-v", "--verbose"):
             return super()._get_help_string(action)
 
         if (
@@ -143,7 +141,7 @@ def add_parser(
         "add_help": False,
     }
     add_parser_kwargs.update(kwargs)
-    return (subparsers or ROOT_SUBPARSERS).add_parser(**add_parser_kwargs)  # type: ignore[invalid-argument-type]
+    return (subparsers or ROOT_SUBPARSERS).add_parser(**add_parser_kwargs)
 
 
 def parse_args(*args, **kwargs) -> argparse.Namespace:

@@ -128,4 +128,4 @@ def getLogger(name: str | None = None) -> CustomLogger:  # noqa: N802 - Function
 logging.setLoggerClass(CustomLogger)
 
 # Overwrite the definition of print after initial class definition, to preserve docstrings and function signatures.
-CustomLogger.print = functools.partialmethod(logging.Logger.log, LogLevels.PRINT)  # type: ignore[invalid-assignment]
+CustomLogger.print = functools.partialmethod(logging.Logger.log, LogLevels.PRINT)  # ty: ignore[invalid-assignment]
