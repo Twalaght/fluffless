@@ -93,6 +93,7 @@ select = ["ALL"]
 
 ignore = [
     # Disable whole sets of rules
+    "CPY", # flake8-copyright
     "EM",  # flake8-errmsg
     "FBT", # flake8-boolean-trap
     "G",   # flake8-logging-format
