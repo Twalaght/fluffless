@@ -114,7 +114,7 @@ def setup_logger(verbosity: int, modules: list[str] | None = None, omit_print_le
         if exc_type is KeyboardInterrupt:
             logger.print("Operation cancelled by user")
         else:
-            logger.exception("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+            logger.exception("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))  # noqa: LOG004
 
     sys.excepthook = handle_exception
 
